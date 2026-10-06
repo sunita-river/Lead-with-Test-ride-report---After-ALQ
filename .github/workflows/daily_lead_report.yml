@@ -1,0 +1,62 @@
+# Runs every day at 9:00 AM IST (03:30 UTC) on GitHub's servers - no PC needs to be on.
+# Repo secrets needed (Settings > Secrets and variables > Actions):
+#   SF_USERNAME, SF_PASSWORD, SF_SECURITY_TOKEN, SMTP_USER, SMTP_PASSWORD, EMAIL_TO
+name: Daily Lead with Test Ride Report
+
+on:
+  schedule:
+    - cron: "30 3 * * *"   # 09:00 IST every day (03:30 UTC); GitHub may start it 5-30 min late
+  workflow_dispatch:         # "Run workflow" button for manual/test runs
+    inputs:
+      dry_run:
+        description: "Dry run (build the CSV only - no email, no history update)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write            # lets the job commit the updated data/lead_history.csv
+
+concurrency:
+  group: lead-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q   # stop before emailing if anything is broken
+      - run: python -m lead_report
+        env:
+          SF_USERNAME: ${{ secrets.SF_USERNAME }}
+          SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+          SF_SECURITY_TOKEN: ${{ secrets.SF_SECURITY_TOKEN }}
+          SF_DOMAIN: rivermobilityprivatelimited2.my
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          SMTP_PORT: "465"
+      # Save the lead history so next week's "new records" compares against this run
+      - name: Commit lead history
+        if: env.DRY_RUN == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898+github-actions[bot]@users.noreply.github.com"
+          git add data/lead_history.csv
+          git diff --cached --quiet || git commit -m "Update lead history $(date +%F)"
+          git pull --rebase --quiet
+          git push
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: lead-report
+          path: output/
+          retention-days: 30

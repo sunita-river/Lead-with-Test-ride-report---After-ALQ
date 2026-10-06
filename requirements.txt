@@ -1,0 +1,8 @@
+# Exact versions = the same, tested setup on every run (locally and on GitHub).
+# To upgrade: change a version, run "python -m pytest" and a DRY_RUN, then commit.
+pandas==2.3.3
+numpy==2.5.3
+python-dotenv==1.2.3
+simple-salesforce==1.12.10
+requests==2.34.2
+pytest==9.1.1
