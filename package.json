@@ -1,0 +1,22 @@
+{
+  "name": "salesforce-workflow",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "login": "playwright test tests/auth.setup.ts --project=setup --headed",
+    "test": "playwright test --project=chrome"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.4.0",
+    "dotenv": "^17.4.2"
+  },
+  "dependencies": {
+    "nodemailer": "^9.0.6"
+  }
+}

@@ -6,3 +6,10 @@ output/
 logs/
 __pycache__/
 .pytest_cache/
+
+# Playwright (local only)
+credentials/
+node_modules/
+playwright-report/
+test-results/
+playwright/.auth/
