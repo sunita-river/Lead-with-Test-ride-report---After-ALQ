@@ -1,11 +1,10 @@
 # Lead with Test Ride daily report
 
 Every day at 9:00 AM IST, GitHub Actions pulls **every row and column** of the Salesforce report
-**"Lead with Test ride report - After ALQ"** (with the report's own filters, including its date range),
-counts leads (unique Lead IDs), leads with a test ride, converted and qualified leads, flags leads not
-reported before, and emails the team:
+**"Lead with Test ride report - After ALQ"** (with the report's own filters, except the date range - see below),
+counts leads (unique Lead IDs), flags leads not reported before, and emails the team:
 
-- the email body, laid out like a Salesforce report subscription: report name, "Open in Salesforce" button, filters and the report's summary totals
+- the email body, laid out like a Salesforce report subscription: report name, "Open in Salesforce" button, filters and the report's summary totals (the totals, such as Total Converted, come from Salesforce itself; the script only counts total and new leads)
 - `Lead_Test_Ride_<date>.csv`: every row and column of the report, plus a "New lead" column (Yes = not reported before). If the CSV is over `MAX_CSV_MB` (17 MB, `config.py`), it is sent as `Lead_Test_Ride_<date>.zip` instead, to stay under the email size limit
 
 A lead with more than one test drive has one row per test drive, as in Salesforce.
@@ -53,9 +52,9 @@ If a run fails, GitHub emails the repository owner. The failing step's log says 
 | Need | Do this |
 |---|---|
 | Add or remove recipients | Edit the `EMAIL_TO` secret (and `.env` for local runs) |
-| Salesforce password changed | Reset the security token in Salesforce, then update `SF_PASSWORD` and `SF_SECURITY_TOKEN` |
+| Salesforce password changed | Reset the security token in Salesforce, then update `SF_PASSWORD` and `SF_SECURITY_TOKEN`. To stop this happening, add `SF_CONSUMER_KEY` and `SF_CONSUMER_SECRET` from a Connected App (client credentials flow); when set they are used instead of the password |
 | Gmail login fails | Create a new Gmail App Password and update `SMTP_PASSWORD` |
-| A report column was added or removed | Nothing to do - every column is included. If Lead ID, Created Date, Converted, Qualified Lead or the test drive columns are renamed, update `lead_report/config.py` |
+| A report column was added or removed | Nothing to do - every column is included. If Lead ID or Created Date is renamed, update `lead_report/config.py` |
 | Different period | Set `MONTH_TO_DATE = False` in `lead_report/config.py`, then change the date filter on the report in Salesforce |
 | Different report | Change `REPORT_ID` in `lead_report/config.py` |
 | Different time or day | Edit the `cron` line in the workflow. It is in UTC: 09:00 IST = `30 3` |

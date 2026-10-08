@@ -2,7 +2,7 @@
 
 1. Download every row and column of the "Lead with Test ride report - After ALQ" Salesforce report
    (lead Created Date from the 1st of this month to today - config.MONTH_TO_DATE)
-2. Count leads, leads with a test ride, converted and qualified leads (unique Lead IDs)
+2. Count leads (unique Lead IDs)
 3. Flag leads not reported before (data/lead_history.csv)
 4. Email the report summary (laid out like a Salesforce subscription) with every row as a CSV
    (zipped only if it is too big to email);
