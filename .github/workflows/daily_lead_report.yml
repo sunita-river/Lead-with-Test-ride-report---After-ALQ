@@ -57,8 +57,19 @@ jobs:
           git config user.email "41898+github-actions[bot]@users.noreply.github.com"
           git add data/lead_history.csv
           git diff --cached --quiet || git commit -m "Update lead history $(date +%F)"
-          git pull --rebase --quiet
-          git push
+          # GitHub occasionally applies a push but reports "cannot lock ref";
+          # retry, and treat it as success if the remote already has our commit.
+          for attempt in 1 2 3; do
+            git pull --rebase --quiet && git push && exit 0
+            git fetch --quiet origin main
+            if git merge-base --is-ancestor HEAD origin/main; then
+              echo "Remote already has this commit - push succeeded."
+              exit 0
+            fi
+            echo "Push attempt $attempt failed, retrying..."
+            sleep $((attempt * 5))
+          done
+          exit 1
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
