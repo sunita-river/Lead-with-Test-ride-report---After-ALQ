@@ -1,6 +1,6 @@
 # Runs every morning on GitHub's servers - no PC needs to be on.
-# GitHub can start scheduled runs late (sometimes hours) or drop them when busy, so there are
-# several backup start times. The "check" job skips a run if today's report was already sent
+# GitHub can start scheduled runs late (sometimes hours) or drop them when busy, so there is
+# a backup start time. The "check" job skips a run if today's report was already sent
 # (data/last_sent.txt holds the IST date of the last real send), so the email goes out once a day.
 # Repo secrets needed (Settings > Secrets and variables > Actions):
 # SF_USERNAME, SF_PASSWORD, SF_SECURITY_TOKEN, SMTP_USER, SMTP_PASSWORD, EMAIL_TO
@@ -12,9 +12,7 @@ name: Daily Lead with Test Ride Report
 on:
   schedule:
     - cron: "7 3 * * *"   # 08:37 IST - main run (off-peak minute so GitHub starts it sooner)
-    - cron: "7 4 * * *"   # 09:37 IST - backup
-    - cron: "7 6 * * *"   # 11:37 IST - backup
-    - cron: "7 9 * * *"   # 14:37 IST - last backup
+    - cron: "7 4 * * *"   # 09:37 IST - backup (skips itself if the 08:37 run already sent)
   workflow_dispatch: # "Run workflow" button for manual/test runs
     inputs:
       dry_run:
