@@ -1,6 +1,9 @@
-# Runs every day at 9:00 AM IST (03:30 UTC) on GitHub's servers - no PC needs to be on.
+# Runs every morning on GitHub's servers - no PC needs to be on.
+# GitHub can start scheduled runs late (sometimes hours) or drop them when busy, so there are
+# several backup start times. The "check" job skips a run if today's report was already sent
+# (data/last_sent.txt holds the IST date of the last real send), so the email goes out once a day.
 # Repo secrets needed (Settings > Secrets and variables > Actions):
-#   SF_USERNAME, SF_PASSWORD, SF_SECURITY_TOKEN, SMTP_USER, SMTP_PASSWORD, EMAIL_TO
+# SF_USERNAME, SF_PASSWORD, SF_SECURITY_TOKEN, SMTP_USER, SMTP_PASSWORD, EMAIL_TO
 # Optional, recommended: SF_CONSUMER_KEY + SF_CONSUMER_SECRET from a Salesforce Connected App
 # (client credentials flow). When set, they are used instead of the password + security token,
 # so the run no longer breaks when the Salesforce password expires.
@@ -8,8 +11,11 @@ name: Daily Lead with Test Ride Report
 
 on:
   schedule:
-    - cron: "30 3 * * *"   # 09:00 IST every day (03:30 UTC); GitHub may start it 5-30 min late
-  workflow_dispatch:         # "Run workflow" button for manual/test runs
+    - cron: "7 3 * * *"   # 08:37 IST - main run (off-peak minute so GitHub starts it sooner)
+    - cron: "7 4 * * *"   # 09:37 IST - backup
+    - cron: "7 6 * * *"   # 11:37 IST - backup
+    - cron: "7 9 * * *"   # 14:37 IST - last backup
+  workflow_dispatch: # "Run workflow" button for manual/test runs
     inputs:
       dry_run:
         description: "Dry run (build the CSV only - no email, no history update)"
@@ -17,14 +23,39 @@ on:
         default: true
 
 permissions:
-  contents: write            # lets the job commit the updated data/lead_history.csv
+  contents: write # lets the job commit the updated data/lead_history.csv
 
 concurrency:
   group: lead-report
-  cancel-in-progress: true
+  cancel-in-progress: false # never kill a report that is already sending; queue the next one
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      skip: ${{ steps.guard.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main # latest main, so it sees a send made by an earlier run today
+
+      - id: guard
+        name: Skip if today's report was already sent
+        run: |
+          today=$(TZ=Asia/Kolkata date +%F)
+          last=$(cat data/last_sent.txt 2>/dev/null || echo none)
+          echo "Today (IST): $today   Last sent: $last"
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$last" = "$today" ]; then
+            echo "Today's report was already sent - skipping this backup run."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
   report:
+    needs: check
+    if: needs.check.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -41,7 +72,7 @@ jobs:
           cache: pip
 
       - run: pip install -r requirements.txt
-      - run: python -m pytest -q   # stop before emailing if anything is broken
+      - run: python -m pytest -q # stop before emailing if anything is broken
       - run: python -m lead_report
         env:
           SF_USERNAME: ${{ secrets.SF_USERNAME }}
@@ -55,7 +86,8 @@ jobs:
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           SMTP_PORT: "465"
 
-      # Save the lead history so tomorrow's "new records" compares against this run
+      # Save the lead history so tomorrow's "new records" compares against this run,
+      # and record today's date so the backup runs know the report was already sent.
       - name: Commit lead history
         if: env.DRY_RUN == 'false'
         run: |
@@ -63,9 +95,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898+github-actions[bot]@users.noreply.github.com"
 
-          git add data/lead_history.csv
+          TZ=Asia/Kolkata date +%F > data/last_sent.txt
+          git add data/lead_history.csv data/last_sent.txt
           if ! git diff --cached --quiet; then
-            git commit -m "Update lead history $(date +%F)"
+            git commit -m "Update lead history $(TZ=Asia/Kolkata date +%F)"
           fi
 
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
