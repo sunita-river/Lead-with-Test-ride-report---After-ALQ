@@ -63,6 +63,19 @@ If a run fails, GitHub emails the repository owner. The failing step's log says 
 To stop password expiry from breaking the run, you can switch to a Salesforce Connected App: set `SF_CONSUMER_KEY`,
 `SF_CONSUMER_SECRET` and `SF_DOMAIN=rivermobilityprivatelimited2.my` (see `env.example`).
 
+## Browser login and self-healing locators
+
+The emailed report uses the Salesforce API only (`lead_report/salesforce.py`): no browser and no screen locators.
+The Playwright files are a separate browser login that saves a session (`npm run login`, runs
+`tests/auth.setup.ts` with `pages/LoginPage.ts`).
+
+Every field and button that login uses (Username, Password, Log In, App Launcher) has backup locators in
+`pages/selfHeal.ts`. The usual locator is always tried first, so a normal login behaves exactly as before.
+If Salesforce renames one, the first matching backup is used, the console shows a
+`[HEAL] <element>: primary ... not found, used backup ...` line, and `output/healed-locators.json` records it.
+The login carries on; update that locator in `pages/LoginPage.ts`, then delete the file. Nothing is sent to
+any outside service.
+
 ## Errors you might see
 
 - **`Missing settings: ...`**: a secret or `.env` value is empty.
