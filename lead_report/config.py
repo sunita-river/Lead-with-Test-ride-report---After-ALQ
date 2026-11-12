@@ -14,9 +14,13 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 # ---- Salesforce report ----
-REPORT_ID = "00OS2000005qeL3MAI"              # "Lead with Test ride report - After ALQ"
+# The same code sends two reports, each from its own workflow:
+#   daily_lead_report.yml  "Lead with Test ride report - After ALQ"       (defaults below)
+#   raam_lead_report.yml   "Lead with Test ride report - Aft_RAAM"        (REPORT_ID, EMAIL_SUBJECT,
+#                          HISTORY_FILE set in the workflow; RAAM dealer codes are filtered in Salesforce)
+REPORT_ID = os.getenv("REPORT_ID", "").strip() or "00OS2000005qeL3MAI"   # "Lead with Test ride report - After ALQ"
 REPORT_URL = ("https://rivermobilityprivatelimited2.lightning.force.com/lightning/r/Report/"
-              "00OS2000005qeL3MAI/view?queryScope=userFolders")   # "Open in Salesforce" button
+              f"{REPORT_ID}/view?queryScope=userFolders")   # "Open in Salesforce" button
 # Every column of the saved report is downloaded and emailed, in the report's order.
 # Labels used twice in the report get a suffix: the test drive's columns start with "Test Drive ",
 # others end with the field name, e.g. "City (City__c)".
@@ -34,10 +38,11 @@ DATE_FILTER_FIELD = "Lead.CreatedDate"      # API name of the lead Created Date 
 
 # ---- Files ----
 TIMEZONE = "Asia/Kolkata"
-HISTORY_FILE = ROOT / "data" / "lead_history.csv"  # every Lead ID already reported, to flag new ones
+# every Lead ID already reported, to flag new ones (relative paths are from the project folder)
+HISTORY_FILE = ROOT / (os.getenv("HISTORY_FILE", "").strip() or "data/lead_history.csv")
 
 # ---- Email ----
-EMAIL_SUBJECT = "Lead with Test Ride Report – After ALQ"
+EMAIL_SUBJECT = os.getenv("EMAIL_SUBJECT", "").strip() or "Lead with Test Ride Report – After ALQ"
 # Attach the CSV as is up to this size; above it, attach it zipped. Attachments grow about 37% when
 # emailed, so 17 MB of CSV is about 23 MB of email - under Gmail's 25 MB limit.
 MAX_CSV_MB = 17

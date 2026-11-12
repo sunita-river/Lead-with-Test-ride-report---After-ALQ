@@ -1,0 +1,134 @@
+# RAAM dealers' copy of the daily Lead with Test Ride report - runs on GitHub's servers, no PC needed.
+# Same code as daily_lead_report.yml, different Salesforce report and recipients:
+#   report  "Lead with Test ride report - Aft_RAAM" (00OS20000073fVeMAI; RAAM dealer codes filtered in Salesforce)
+#   email   shagun@raamgroup.in, gunjeet.singh@raamgroup.in, ajish@rideriver.com, aarsh@rideriver.com, elakaya@rideriver.com
+# It keeps its own lead history (data/raam_lead_history.csv) and send date (data/raam_last_sent.txt),
+# so the two reports never affect each other. Uses the same repo secrets as daily_lead_report.yml.
+# A backup start time covers GitHub starting scheduled runs late; it skips itself if today's email was sent.
+name: Daily Lead with Test Ride Report - RAAM
+
+on:
+  schedule:
+    - cron: "17 3 * * *"  # 08:47 IST - main run (10 min after the After ALQ report)
+    - cron: "17 4 * * *"  # 09:47 IST - backup (skips itself if the 08:47 run already sent)
+  workflow_dispatch: # "Run workflow" button for manual/test runs
+    inputs:
+      dry_run:
+        description: "Dry run (build the CSV only - no email, no history update)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write # lets the job commit the updated data/raam_lead_history.csv
+
+concurrency:
+  group: lead-report-raam
+  cancel-in-progress: false # never kill a report that is already sending; queue the next one
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      skip: ${{ steps.guard.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main # latest main, so it sees a send made by an earlier run today
+
+      - id: guard
+        name: Skip if today's report was already sent
+        run: |
+          today=$(TZ=Asia/Kolkata date +%F)
+          last=$(cat data/raam_last_sent.txt 2>/dev/null || echo none)
+          echo "Today (IST): $today   Last sent: $last"
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$last" = "$today" ]; then
+            echo "Today's report was already sent - skipping this backup run."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  report:
+    needs: check
+    if: needs.check.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q # stop before emailing if anything is broken
+      - run: python -m lead_report
+        env:
+          SF_USERNAME: ${{ secrets.SF_USERNAME }}
+          SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+          SF_SECURITY_TOKEN: ${{ secrets.SF_SECURITY_TOKEN }}
+          SF_CONSUMER_KEY: ${{ secrets.SF_CONSUMER_KEY }}
+          SF_CONSUMER_SECRET: ${{ secrets.SF_CONSUMER_SECRET }}
+          SF_DOMAIN: rivermobilityprivatelimited2.my
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_TO: shagun@raamgroup.in,gunjeet.singh@raamgroup.in,ajish@rideriver.com,aarsh@rideriver.com,elakaya@rideriver.com
+          REPORT_ID: 00OS20000073fVeMAI
+          EMAIL_SUBJECT: Lead with Test Ride Report – After ALQ (RAAM)
+          HISTORY_FILE: data/raam_lead_history.csv
+          SMTP_PORT: "465"
+
+      # Save the lead history so tomorrow's "new records" compares against this run,
+      # and record today's date so the backup runs know the report was already sent.
+      - name: Commit lead history
+        if: env.DRY_RUN == 'false'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898+github-actions[bot]@users.noreply.github.com"
+
+          TZ=Asia/Kolkata date +%F > data/raam_last_sent.txt
+          git add data/raam_lead_history.csv data/raam_last_sent.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "Update RAAM lead history $(TZ=Asia/Kolkata date +%F)"
+          fi
+
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+
+          if ! git rebase --autostash origin/main; then
+            echo "Rebase failed; aborting"
+            git rebase --abort || true
+            exit 1
+          fi
+
+          for i in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "Push succeeded"
+              break
+            fi
+            if [ "$i" -eq 3 ]; then
+              echo "Push failed after 3 attempts"
+              exit 1
+            fi
+            echo "Push failed, retrying after rebase..."
+            git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+            if ! git rebase --autostash origin/main; then
+              echo "Rebase failed; aborting"
+              git rebase --abort || true
+              exit 1
+            fi
+          done
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: lead-report-raam
+          path: output/
+          retention-days: 30

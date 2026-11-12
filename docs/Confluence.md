@@ -3,8 +3,21 @@
 Every day at 09:00 IST, GitHub Actions pulls **every row and column** of the Salesforce report **"Lead with Test ride report - After ALQ"**, counts leads, flags leads not reported before and emails the team a summary with the full data as a CSV.
 
 - **Repository:** https://github.com/sunita-river/Lead-with-Test-ride-report---After-ALQ
-- **Test cases:** `docs/Lead_Test_Ride_Report_Test_Cases.xlsx` in the repository (37 cases, 29 passed offline; the rest need a live run)
+- **Test cases:** `docs/Lead_Test_Ride_Report_Test_Cases.xlsx` in the repository (42 cases, 33 passed; the rest need a live run)
 - **Owner:** Sunita Sahu
+
+---
+
+## Reports and recipients
+
+The same code sends two reports, each from its own GitHub Actions workflow. They keep separate lead histories and do not affect each other.
+
+| Report | Salesforce report | Workflow | Time (IST) | Sent to |
+|---|---|---|---|---|
+| After ALQ | Lead with Test ride report - After ALQ (`00OS2000005qeL3MAI`) | `daily_lead_report.yml` | 08:37, backup 09:37 | `EMAIL_TO` repository secret |
+| RAAM (added 12-Nov-2026) | Lead with Test ride report - Aft_RAAM (`00OS20000073fVeMAI`), filtered to the RAAM dealer codes in Salesforce | `raam_lead_report.yml` | 08:47, backup 09:47 | shagun@raamgroup.in, gunjeet.singh@raamgroup.in, ajish@rideriver.com, aarsh@rideriver.com, elakaya@rideriver.com |
+
+RAAM history: `data/raam_lead_history.csv` and `data/raam_last_sent.txt`. Its first run is the baseline, so no lead is flagged new that day.
 
 ---
 
@@ -77,12 +90,14 @@ How it works:
 
 | Area | Cases | Positive | Negative | Edge | Passed |
 |---|---|---|---|---|---|
-| Lead Report | 24 | 12 | 6 | 6 | 22 |
+| Lead Report | 29 | 16 | 6 | 7 | 26 |
 | Browser Login | 6 | 3 | 2 | 1 | 2 |
 | Self-healing | 7 | 4 | 1 | 2 | 5 |
-| **Total** | **37** | **19** | **9** | **9** | **29** |
+| **Total** | **42** | **23** | **9** | **10** | **33** |
 
 Passed on 05-Nov-2026, offline: the 28 unit tests (`python -m pytest`, Salesforce and email replaced by fakes), `npx playwright test --list`, and Playwright mock pages for the login and self-healing (usual page: no heal; renamed fields and buttons: 4 heals, login completes; clear error when nothing matches). No live Salesforce run and no email.
+
+12-Nov-2026 (RAAM): 31 unit tests passed, including 3 new config tests; dry run against the live RAAM report downloaded 2,211 of 2,211 rows (2,205 leads, 1-12 Nov) with the Dealer Code filter shown in the email. No email sent. The first scheduled RAAM send (LTR-29) is still to be confirmed.
 
 ---
 

@@ -12,6 +12,24 @@ A lead with more than one test drive has one row per test drive, as in Salesforc
 sets it on every run in place of the date range saved on the report; all other report filters are kept.
 Set `MONTH_TO_DATE = False` in `lead_report/config.py` to use the report's saved date range instead.
 
+## RAAM report (second workflow, same code)
+
+`.github/workflows/raam_lead_report.yml` sends the same report for the RAAM dealers:
+
+| | After ALQ (`daily_lead_report.yml`) | RAAM (`raam_lead_report.yml`) |
+|---|---|---|
+| Salesforce report | "Lead with Test ride report - After ALQ" (`00OS2000005qeL3MAI`) | "Lead with Test ride report - Aft_RAAM" (`00OS20000073fVeMAI`); the RAAM dealer codes are a filter on the report in Salesforce |
+| Recipients | `EMAIL_TO` secret | shagun@raamgroup.in, gunjeet.singh@raamgroup.in, ajish@rideriver.com, aarsh@rideriver.com, elakaya@rideriver.com (in the workflow file) |
+| Subject | Lead with Test Ride Report – After ALQ | Lead with Test Ride Report – After ALQ (RAAM) |
+| Time (IST) | 08:37, backup 09:37 | 08:47, backup 09:47 |
+| Lead history / send date | `data/lead_history.csv`, `data/last_sent.txt` | `data/raam_lead_history.csv`, `data/raam_last_sent.txt` |
+
+The workflow sets `REPORT_ID`, `EMAIL_SUBJECT` and `HISTORY_FILE`; without them `lead_report/config.py` uses the
+After ALQ values, so the original report is unchanged. Both use the same repository secrets. The first RAAM run
+records the baseline, so no lead is flagged new that day. To change RAAM recipients or dealers: edit `EMAIL_TO` in
+`raam_lead_report.yml`, or the Dealer Code filter on the RAAM report in Salesforce.
+Run it locally: `DRY_RUN=true REPORT_ID=00OS20000073fVeMAI HISTORY_FILE=data/raam_lead_history.csv python -m lead_report`.
+
 ## Layout
 
 | Path | What it does |
@@ -23,7 +41,9 @@ Set `MONTH_TO_DATE = False` in `lead_report/config.py` to use the report's saved
 | `lead_report/mailer.py` | Builds and sends the email (retries brief connection drops) |
 | `lead_report/main.py` | Runs the steps in order |
 | `data/lead_history.csv` | Every Lead ID already reported. Updated only after a successful send, then committed by the workflow |
-| `.github/workflows/daily_lead_report.yml` | The schedule |
+| `.github/workflows/daily_lead_report.yml` | The schedule (After ALQ report) |
+| `.github/workflows/raam_lead_report.yml` | The schedule (RAAM report, see above) |
+| `data/raam_lead_history.csv`, `data/raam_last_sent.txt` | RAAM's own history and send date (created by its first run) |
 
 ## Run locally
 
