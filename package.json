@@ -17,6 +17,6 @@
     "dotenv": "^17.4.2"
   },
   "dependencies": {
-    "nodemailer": "^9.0.6"
+    "nodemailer": "^10.1.4"
   }
 }
