@@ -1,7 +1,8 @@
 # RAAM dealers' copy of the daily Lead with Test Ride report - runs on GitHub's servers, no PC needed.
 # Same code as daily_lead_report.yml, different Salesforce report and recipients:
 #   report  "Lead with Test ride report - Aft_RAAM" (00OS20000073fVeMAI; RAAM dealer codes filtered in Salesforce)
-#   email   shagun@raamgroup.in, gunjeet.singh@raamgroup.in, ajish@rideriver.com, aarsh@rideriver.com, elakaya@rideriver.com
+#   email   shagun@raamgroup.in, gunjeet.singh@raamgroup.in, ajish@rideriver.com, aarsh@rideriver.com, elakaya@rideriver.com,
+#           ravichandra@rideriver.com, saurabhmantri@rideriver.com, akshath@rideriver.com, devvrat@rideriver.com, royden@rideriver.com
 # It keeps its own lead history (data/raam_lead_history.csv) and send date (data/raam_last_sent.txt),
 # so the two reports never affect each other. Uses the same repo secrets as daily_lead_report.yml.
 # A backup start time covers GitHub starting scheduled runs late; it skips itself if today's email was sent.
@@ -79,7 +80,7 @@ jobs:
           SF_DOMAIN: rivermobilityprivatelimited2.my
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          EMAIL_TO: shagun@raamgroup.in,gunjeet.singh@raamgroup.in,ajish@rideriver.com,aarsh@rideriver.com,elakaya@rideriver.com
+          EMAIL_TO:  shagun@raamgroup.in,gunjeet.singh@raamgroup.in,ajish@rideriver.com, aarsh@rideriver.com,elakaya@rideriver.com,ravichandra@rideriver.com,saurabhmantri@rideriver.com,akshath@rideriver.com,devvrat@rideriver.com,royden@rideriver.com
           REPORT_ID: 00OS20000073fVeMAI
           EMAIL_SUBJECT: Lead with Test Ride Report – After ALQ (RAAM)
           HISTORY_FILE: data/raam_lead_history.csv
