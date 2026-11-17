@@ -3,7 +3,8 @@
 # a backup start time. The "check" job skips a run if today's report was already sent
 # (data/last_sent.txt holds the IST date of the last real send), so the email goes out once a day.
 # Repo secrets needed (Settings > Secrets and variables > Actions):
-# SF_USERNAME, SF_PASSWORD, SF_SECURITY_TOKEN, SMTP_USER, SMTP_PASSWORD, EMAIL_TO
+# SF_USERNAME, SF_PASSWORD, SF_SECURITY_TOKEN, SMTP_USER, SMTP_PASSWORD
+# Recipients are listed in EMAIL_TO below (same as raam_lead_report.yml); the old EMAIL_TO secret is no longer used.
 # Optional, recommended: SF_CONSUMER_KEY + SF_CONSUMER_SECRET from a Salesforce Connected App
 # (client credentials flow). When set, they are used instead of the password + security token,
 # so the run no longer breaks when the Salesforce password expires.
@@ -81,7 +82,7 @@ jobs:
           SF_DOMAIN: rivermobilityprivatelimited2.my
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_TO: sunita@rideriver.com,aarsh@rideriver.com,benwin@rideriver.com,akhil.sami@bmeg.in,biswajit.pradhan@bmeg.in,sriharsha.ch@bmeg.in,vartika.anand@bmeg.in,sunil.mujagond@bmeg.in,regil@rideriver.com,prakhar.singh@bmeg.in,shashwat@rideriver.com
           SMTP_PORT: "465"
 
       # Save the lead history so tomorrow's "new records" compares against this run,
