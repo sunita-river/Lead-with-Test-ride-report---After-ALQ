@@ -19,7 +19,7 @@ Set `MONTH_TO_DATE = False` in `lead_report/config.py` to use the report's saved
 | | After ALQ (`daily_lead_report.yml`) | RAAM (`raam_lead_report.yml`) |
 |---|---|---|
 | Salesforce report | "Lead with Test ride report - After ALQ" (`00OS2000005qeL3MAI`) | "Lead with Test ride report - Aft_RAAM" (`00OS20000073fVeMAI`); the RAAM dealer codes are a filter on the report in Salesforce |
-| Recipients | `EMAIL_TO` secret | shagun@raamgroup.in, gunjeet.singh@raamgroup.in, ajish@rideriver.com, aarsh@rideriver.com, elakaya@rideriver.com, ravichandra@rideriver.com, saurabhmantri@rideriver.com, akshath@rideriver.com, devvrat@rideriver.com, royden@rideriver.com, sunita@rideriver.com, shubh.chadha@raamgroup.in, venkata.keerthi@raamgroup.in, jalamrathore@rivermh.in, praveen@rivermh.in, tanvireddy@rivermh.in, prangya.p@silver-star.co.in, rishabhyadav@epicmotors.in (in the workflow file) |
+| Recipients | `EMAIL_TO` secret | shagun@raamgroup.in, gunjeet.singh@raamgroup.in, ajish@rideriver.com, aarsh@rideriver.com, elakaya@rideriver.com, ravichandra@rideriver.com, saurabhmantri@rideriver.com, akshath@rideriver.com, devvrat@rideriver.com, royden@rideriver.com, sunita@rideriver.com, shubh.chadha@raamgroup.in, venkata.keerthi@raamgroup.in, jalamrathore@rivermh.in, praveen@rivermh.in, tanvireddy@rivermh.in, prangya.p@silver-star.co.in, rishabhyadav@epicmotors.in, pravallika@raamgroup.in (in the workflow file) |
 | Subject | Lead with Test Ride Report – After ALQ | Lead with Test Ride Report – After ALQ (RAAM) |
 | Time (IST) | 08:37, backup 09:37 | 08:47, backup 09:47 |
 | Lead history / send date | `data/lead_history.csv`, `data/last_sent.txt` | `data/raam_lead_history.csv`, `data/raam_last_sent.txt` |
