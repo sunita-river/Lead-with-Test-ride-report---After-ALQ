@@ -7,13 +7,13 @@
 #           tanvireddy@rivermh.in, prangya.p@silver-star.co.in, rishabhyadav@epicmotors.in, pravallika@raamgroup.in (added 18-Nov-2026)
 # It keeps its own lead history (data/raam_lead_history.csv) and send date (data/raam_last_sent.txt),
 # so the two reports never affect each other. Uses the same repo secrets as daily_lead_report.yml.
-# A backup start time covers GitHub starting scheduled runs late; it skips itself if today's email was sent.
+# SCHEDULE: since 19-Nov-2026 the daily 08:30 IST run is on the EC2 Linux server (linux-server/crontab.txt ->
+# cron.sh lead-raam, backups 09:00 / 09:30; recipients in linux-server/run.sh job sf-lead-raam). GitHub started its
+# "08:47" runs at ~09:30, so the schedule was removed here. Kept only for a manual emergency run ("Run workflow").
 name: Daily Lead with Test Ride Report - RAAM
 
 on:
-  schedule:
-    - cron: "17 3 * * *"  # 08:47 IST - main run (10 min after the After ALQ report)
-    - cron: "17 4 * * *"  # 09:47 IST - backup (skips itself if the 08:47 run already sent)
+  # no schedule: the server sends at 08:30 IST (see the top of this file)
   workflow_dispatch: # "Run workflow" button for manual/test runs
     inputs:
       dry_run:

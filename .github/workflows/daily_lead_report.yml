@@ -1,7 +1,7 @@
-# Runs every morning on GitHub's servers - no PC needs to be on.
-# GitHub can start scheduled runs late (sometimes hours) or drop them when busy, so there is
-# a backup start time. The "check" job skips a run if today's report was already sent
-# (data/last_sent.txt holds the IST date of the last real send), so the email goes out once a day.
+# SCHEDULE: since 19-Nov-2026 the daily 08:30 IST run is on the EC2 Linux server (linux-server/crontab.txt ->
+# cron.sh lead, backups 09:00 / 09:30). GitHub started its "08:37" runs at ~09:25, so the schedule was removed here.
+# This workflow is kept only for a manual emergency run ("Run workflow") when the server is down. It commits the
+# history to this repo; the server works from sunita-river/main, so copy data/ there afterwards.
 # Repo secrets needed (Settings > Secrets and variables > Actions):
 # SF_USERNAME, SF_PASSWORD, SF_SECURITY_TOKEN, SMTP_USER, SMTP_PASSWORD
 # Recipients are listed in EMAIL_TO below (same as raam_lead_report.yml); the old EMAIL_TO secret is no longer used.
@@ -11,9 +11,7 @@
 name: Daily Lead with Test Ride Report
 
 on:
-  schedule:
-    - cron: "7 3 * * *"   # 08:37 IST - main run (off-peak minute so GitHub starts it sooner)
-    - cron: "7 4 * * *"   # 09:37 IST - backup (skips itself if the 08:37 run already sent)
+  # no schedule: the server sends at 08:30 IST (see the top of this file)
   workflow_dispatch: # "Run workflow" button for manual/test runs
     inputs:
       dry_run:

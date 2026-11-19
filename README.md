@@ -1,6 +1,6 @@
 # Lead with Test Ride daily report
 
-Every day at 9:00 AM IST, GitHub Actions pulls **every row and column** of the Salesforce report
+Every day at 08:30 IST, the EC2 Linux server (`linux-server/cron.sh lead`) pulls **every row and column** of the Salesforce report
 **"Lead with Test ride report - After ALQ"** (with the report's own filters, except the date range - see below),
 counts leads (unique Lead IDs), flags leads not reported before, and emails the team:
 
@@ -12,22 +12,36 @@ A lead with more than one test drive has one row per test drive, as in Salesforc
 sets it on every run in place of the date range saved on the report; all other report filters are kept.
 Set `MONTH_TO_DATE = False` in `lead_report/config.py` to use the report's saved date range instead.
 
-## RAAM report (second workflow, same code)
+## Schedule (EC2 Linux server, since 19-Nov-2026)
 
-`.github/workflows/raam_lead_report.yml` sends the same report for the RAAM dealers:
+Both reports run on the EC2 server from `linux-server/crontab.txt`, in their own queue (`lead`), so no other job can
+hold them up. GitHub Actions started its "08:37" runs at about 09:25 IST, so the GitHub schedule was removed; the
+workflows are kept only for a manual emergency run when the server is down.
 
-| | After ALQ (`daily_lead_report.yml`) | RAAM (`raam_lead_report.yml`) |
+| Time (IST) | What happens |
+|---|---|
+| 08:30 | `cron.sh lead` and `cron.sh lead-raam` start (one after the other, about 2 min each). Each tries up to 3 times, 5 min apart, and never sends a second email once one has gone out |
+| 09:00, 09:30 | Backup starts: they do nothing if today's email was sent (`data/last_sent.txt` / `data/raam_last_sent.txt` = today) |
+| after each run | Result email (OK / FAILED with the log) to `NOTIFY_TO`; the history and send date are committed to `sunita-river/.../main` |
+
+Mail goes through the server's relay (Amazon SES) as River QA Automation <qa-automation@rideriver.com>, with
+sunita@rideriver.com always in Cc. External recipients must be listed in
+`linux-server/mail-relay/approved-external-recipients.txt`, or the relay refuses the email.
+
+## RAAM report (same code, different report)
+
+| | After ALQ (`cron.sh lead`) | RAAM (`cron.sh lead-raam`) |
 |---|---|---|
 | Salesforce report | "Lead with Test ride report - After ALQ" (`00OS2000005qeL3MAI`) | "Lead with Test ride report - Aft_RAAM" (`00OS20000073fVeMAI`); the RAAM dealer codes are a filter on the report in Salesforce |
-| Recipients | `EMAIL_TO` secret | shagun@raamgroup.in, gunjeet.singh@raamgroup.in, ajish@rideriver.com, aarsh@rideriver.com, elakaya@rideriver.com, ravichandra@rideriver.com, saurabhmantri@rideriver.com, akshath@rideriver.com, devvrat@rideriver.com, royden@rideriver.com, sunita@rideriver.com, shubh.chadha@raamgroup.in, venkata.keerthi@raamgroup.in, jalamrathore@rivermh.in, praveen@rivermh.in, tanvireddy@rivermh.in, prangya.p@silver-star.co.in, rishabhyadav@epicmotors.in, pravallika@raamgroup.in (in the workflow file) |
+| Recipients | `LEAD_TO` in `linux-server/cron.sh` | `EMAIL_TO` in job `sf-lead-raam` of `linux-server/run.sh` |
 | Subject | Lead with Test Ride Report – After ALQ | Lead with Test Ride Report – After ALQ (RAAM) |
-| Time (IST) | 08:37, backup 09:37 | 08:47, backup 09:47 |
+| Time (IST) | 08:30, backups 09:00 / 09:30 | 08:30, backups 09:00 / 09:30 |
 | Lead history / send date | `data/lead_history.csv`, `data/last_sent.txt` | `data/raam_lead_history.csv`, `data/raam_last_sent.txt` |
 
-The workflow sets `REPORT_ID`, `EMAIL_SUBJECT` and `HISTORY_FILE`; without them `lead_report/config.py` uses the
-After ALQ values, so the original report is unchanged. Both use the same repository secrets. The first RAAM run
-records the baseline, so no lead is flagged new that day. To change RAAM recipients or dealers: edit `EMAIL_TO` in
-`raam_lead_report.yml`, or the Dealer Code filter on the RAAM report in Salesforce.
+The RAAM job sets `REPORT_ID`, `EMAIL_SUBJECT` and `HISTORY_FILE`; without them `lead_report/config.py` uses the
+After ALQ values. To change recipients: edit the list named above (and the same `EMAIL_TO` in the workflow file, for
+the emergency run), then copy the linux-server file to the server. To change RAAM dealers: the Dealer Code filter on
+the RAAM report in Salesforce.
 Run it locally: `DRY_RUN=true REPORT_ID=00OS20000073fVeMAI HISTORY_FILE=data/raam_lead_history.csv python -m lead_report`.
 
 ## Layout
@@ -41,8 +55,8 @@ Run it locally: `DRY_RUN=true REPORT_ID=00OS20000073fVeMAI HISTORY_FILE=data/raa
 | `lead_report/mailer.py` | Builds and sends the email (retries brief connection drops) |
 | `lead_report/main.py` | Runs the steps in order |
 | `data/lead_history.csv` | Every Lead ID already reported. Updated only after a successful send, then committed by the workflow |
-| `.github/workflows/daily_lead_report.yml` | The schedule (After ALQ report) |
-| `.github/workflows/raam_lead_report.yml` | The schedule (RAAM report, see above) |
+| `.github/workflows/daily_lead_report.yml` | Manual emergency run on GitHub (After ALQ report); no schedule |
+| `.github/workflows/raam_lead_report.yml` | Manual emergency run on GitHub (RAAM report); no schedule |
 | `data/raam_lead_history.csv`, `data/raam_last_sent.txt` | RAAM's own history and send date (created by its first run) |
 
 ## Run locally
@@ -71,13 +85,13 @@ If a run fails, GitHub emails the repository owner. The failing step's log says 
 
 | Need | Do this |
 |---|---|
-| Add or remove recipients | Edit the `EMAIL_TO` secret (and `.env` for local runs) |
+| Add or remove recipients | After ALQ: `LEAD_TO` in `linux-server/cron.sh`; RAAM: `sf-lead-raam` in `linux-server/run.sh`. Copy the file to the server. A new address outside rideriver.com also goes in `mail-relay/approved-external-recipients.txt` |
 | Salesforce password changed | Reset the security token in Salesforce, then update `SF_PASSWORD` and `SF_SECURITY_TOKEN`. To stop this happening, add `SF_CONSUMER_KEY` and `SF_CONSUMER_SECRET` from a Connected App (client credentials flow); when set they are used instead of the password |
 | Gmail login fails | Create a new Gmail App Password and update `SMTP_PASSWORD` |
 | A report column was added or removed | Nothing to do - every column is included. If Lead ID or Created Date is renamed, update `lead_report/config.py` |
 | Different period | Set `MONTH_TO_DATE = False` in `lead_report/config.py`, then change the date filter on the report in Salesforce |
 | Different report | Change `REPORT_ID` in `lead_report/config.py` |
-| Different time or day | Edit the `cron` line in the workflow. It is in UTC: 09:00 IST = `30 3` |
+| Different time or day | Edit the `lead` / `lead-raam` lines in `linux-server/crontab.txt` (Indian time), then install it on the server |
 | Start "new" tracking again | Delete `data/lead_history.csv`. The next run records a baseline, with nothing flagged as new |
 
 To stop password expiry from breaking the run, you can switch to a Salesforce Connected App: set `SF_CONSUMER_KEY`,
