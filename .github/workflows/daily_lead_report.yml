@@ -80,7 +80,7 @@ jobs:
           SF_DOMAIN: rivermobilityprivatelimited2.my
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          EMAIL_TO: sunita@rideriver.com,aarsh@rideriver.com,benwin@rideriver.com,akhil.sami@bmeg.in,biswajit.pradhan@bmeg.in,sriharsha.ch@bmeg.in,vartika.anand@bmeg.in,sunil.mujagond@bmeg.in,regil@rideriver.com,prakhar.singh@bmeg.in,shashwat@rideriver.com
+          EMAIL_TO: sunita@rideriver.com,aarsh@rideriver.com,benwin@rideriver.com,akhil.sami@bmeg.in,biswajit.pradhan@bmeg.in,sriharsha.ch@bmeg.in,vartika.anand@bmeg.in,sunil.mujagond@bmeg.in,regil@rideriver.com,vinaysimha@rideriver.com,shashwat@rideriver.com
           SMTP_PORT: "465"
 
       # Save the lead history so tomorrow's "new records" compares against this run,
